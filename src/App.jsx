@@ -1,9 +1,5 @@
-
-import React from "react";
+import React, { useState } from "react";
 import "./styles/global.css";
-
-const CENTRE_ADDRESS =
-  "Mulugu, Bandurupally Road, Opposite DSP Office, Telangana";
 
 const COURSES = [
   { icon: "💻", title: "Computer Basics", description: "Learn essential computer skills." },
@@ -15,768 +11,165 @@ const COURSES = [
   { icon: "📈", title: "Tally Prime & GST", description: "Learn accounting and GST basics." },
   { icon: "🗣️", title: "Soft Skills", description: "Improve communication and interview skills." },
   { icon: "💬", title: "Spoken English", description: "Build everyday speaking confidence." },
-  { icon: "🤖", title: "AI & Digital Skills", description: "Explore digital tools and AI basics." }
+  { icon: "🤖", title: "AI & Digital Skills", description: "Explore digital tools and AI basics." },
 ];
 
-const BENEFITS = [
-  {
-    icon: "📚",
-    title: "Practical Learning",
-    description: "Improve your skills through practice and project-based learning."
-  },
-  {
-    icon: "👥",
-    title: "Career Guidance",
-    description: "Get guidance on resumes, interviews, and job applications."
-  },
-  {
-    icon: "💼",
-    title: "Placement Information",
-    description: "Ask about job opportunities and placement assistance."
+const ADDRESS = "Mulugu, Bandurupally Road, Opposite DSP Office, Telangana";
+const PHONE_ONE = "96184 49360";
+const PHONE_TWO = "94905 00282";
+const STUDENT_IMAGE = "/images/Smiling%20Student%20with%20Books%20and%20Thumbs-Up.png";
+const EMPTY_FORM = { name: "", mobile: "", course: COURSES[0].title, qualification: "", batch: "", message: "" };
+
+export default function App() {
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [status, setStatus] = useState({ type: "", message: "" });
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [login, setLogin] = useState({ mobile: "", password: "" });
+  const [loginStatus, setLoginStatus] = useState({ type: "", message: "" });
+
+  function updateField(event) {
+    setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
+    setStatus({ type: "", message: "" });
   }
-];
 
-const USERS_KEY = "task_demo_users";
-const SESSION_KEY = "task_demo_session";
-
-function getUsers() {
-  try {
-    return JSON.parse(localStorage.getItem(USERS_KEY) || "[]");
-  } catch {
-    return [];
-  }
-}
-
-function App() {
-  const [currentUser, setCurrentUser] = React.useState(() => {
+  function submitRegistration(event) {
+    event.preventDefault();
+    const mobile = form.mobile.trim();
+    if (!/^[6-9]\d{9}$/.test(mobile)) {
+      setStatus({ type: "error", message: "Please enter a valid 10-digit Indian mobile number." });
+      return;
+    }
     try {
-      return JSON.parse(sessionStorage.getItem(SESSION_KEY) || "null");
+      const saved = JSON.parse(localStorage.getItem("taskSkillRegistrations") || "[]");
+      if (!Array.isArray(saved)) throw new Error("Invalid saved data");
+      saved.push({ ...form, mobile, submittedAt: new Date().toISOString() });
+      localStorage.setItem("taskSkillRegistrations", JSON.stringify(saved));
+      setForm({ ...EMPTY_FORM });
+      setStatus({ type: "success", message: "Demo registration saved in this browser only. The centre has not been notified." });
     } catch {
-      return null;
+      setStatus({ type: "error", message: "Unable to save the demo registration in this browser." });
     }
-  });
-
-  const [showAuth, setShowAuth] = React.useState(false);
-  const [authMode, setAuthMode] = React.useState("login");
-
-  const [authForm, setAuthForm] = React.useState({
-    name: "",
-    phone: "",
-    email: "",
-    password: "",
-    confirmPassword: ""
-  });
-
-  const [authMessage, setAuthMessage] = React.useState("");
-
-  const [form, setForm] = React.useState({
-    name: "",
-    phone: "",
-    course: "",
-    message: ""
-  });
-
-  const [status, setStatus] = React.useState("");
-
-  function openAuth(mode) {
-    setAuthMode(mode);
-    setAuthMessage("");
-    setShowAuth(true);
   }
 
-  function handleAuthChange(event) {
-    const { name, value } = event.target;
-
-    setAuthForm((old) => ({
-      ...old,
-      [name]: value
-    }));
-
-    setAuthMessage("");
-  }
-
-  function handleAuthSubmit(event) {
+  function submitLogin(event) {
     event.preventDefault();
-
-    const email = authForm.email.trim().toLowerCase();
-    const users = getUsers();
-
-    if (authMode === "register") {
-      if (authForm.password.length < 6) {
-        setAuthMessage("Password must contain at least 6 characters.");
-        return;
-      }
-
-      if (authForm.password !== authForm.confirmPassword) {
-        setAuthMessage("Passwords do not match.");
-        return;
-      }
-
-      if (users.some((user) => user.email === email)) {
-        setAuthMessage("This email is already registered. Please log in.");
-        return;
-      }
-
-      // Demo only. Do not store real passwords in browser storage.
-      const newUser = {
-        name: authForm.name.trim(),
-        phone: authForm.phone.trim(),
-        email,
-        password: authForm.password
-      };
-
-      localStorage.setItem(
-        USERS_KEY,
-        JSON.stringify([...users, newUser])
-      );
-
-      finishLogin({
-        name: newUser.name,
-        email: newUser.email
-      });
-
+    if (!/^[6-9]\d{9}$/.test(login.mobile.trim())) {
+      setLoginStatus({ type: "error", message: "Enter a valid 10-digit mobile number." });
       return;
     }
-
-    const user = users.find(
-      (item) =>
-        item.email === email &&
-        item.password === authForm.password
-    );
-
-    if (!user) {
-      setAuthMessage(
-        "Incorrect email or password. Register first if you are a new user."
-      );
-      return;
-    }
-
-    finishLogin({
-      name: user.name,
-      email: user.email
+    setLoginStatus({
+      type: "info",
+      message: "Login screen is ready, but secure sign-in needs a backend API and registered user accounts. This demo does not verify passwords."
     });
   }
 
-  function finishLogin(user) {
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
-    setCurrentUser(user);
-
-    setAuthForm({
-      name: "",
-      phone: "",
-      email: "",
-      password: "",
-      confirmPassword: ""
-    });
-
-    setAuthMessage("");
-    setShowAuth(false);
-  }
-
-  function handleLogout() {
-    sessionStorage.removeItem(SESSION_KEY);
-    setCurrentUser(null);
-  }
-
-  function handleContactChange(event) {
-    const { name, value } = event.target;
-
-    setForm((old) => ({
-      ...old,
-      [name]: value
-    }));
-
-    setStatus("");
-  }
-
-  function handleContactSubmit(event) {
-    event.preventDefault();
-
-    setStatus(
-      "Demo only: your enquiry has not been sent. Connect a backend or email service to receive submissions."
-    );
-  }
-
-  function selectCourse(title) {
-    setForm((old) => ({
-      ...old,
-      course: title
-    }));
+  function chooseCourse(title) {
+    setForm((current) => ({ ...current, course: title }));
+    document.getElementById("register")?.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
   return (
-    <>
-      {/* Top information bar */}
-      <div className="topbar">
-        <span>
-          ⭐ Skills for Your Future. Knowledge for Your Success.
-        </span>
+    <div className="site" id="home">
+      <div className="top"><div className="wrap topin">
+        <span>Skill Training for the Youth of Telangana</span>
+        <span className="top-contact">☎ +91 {PHONE_ONE} | +91 {PHONE_TWO} &nbsp; • &nbsp; ⌖ {ADDRESS}</span>
+      </div></div>
 
-        <a href="#contact">
-          📞 96184 49360 · 94905 00282
+      <header className="header"><div className="wrap nav">
+        <a className="brand" href="#home" aria-label="TASK Skill Centre home">
+          <span className="logo" aria-hidden="true">▤</span>
+          <span><b>TASK Skill Centre</b><small>Skill Development &amp; Career Support</small></span>
         </a>
-      </div>
-
-      {/* Header and navigation */}
-      <header className="site-header">
-        <a
-          className="brand"
-          href="#home"
-          aria-label="TASK Skill Centre home"
-        >
-          <span className="brand-mark">🎓</span>
-
-          <span>
-            <strong className="brand-title">
-              Telangana Academy for Skill and Knowledge
-            </strong>
-
-            <small>
-              TASK · Skill Development &amp; Career Support
-            </small>
-          </span>
-        </a>
-
-        <nav className="main-nav" aria-label="Main navigation">
-          <a href="#home">Home</a>
-          <a href="#courses">Courses</a>
-          <a href="#benefits">Benefits</a>
-          <a href="#contact">Contact</a>
-
-          {currentUser ? (
-            <>
-              <span className="signed-in-label">
-                Hi, {currentUser.name}
-              </span>
-
-              <button
-                className="button button-red"
-                type="button"
-                onClick={handleLogout}
-              >
-                Logout
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                className="button button-outline-dark"
-                type="button"
-                onClick={() => openAuth("login")}
-              >
-                Login
-              </button>
-
-              <button
-                className="button button-red"
-                type="button"
-                onClick={() => openAuth("register")}
-              >
-                Register
-              </button>
-            </>
-          )}
+        <nav aria-label="Main navigation">
+          <a href="#home">Home</a><a href="#courses">Courses</a><a href="#about">About</a><a href="#benefits">Benefits</a><a href="#contact">Contact</a>
         </nav>
-      </header>
+        <button className="btn login" type="button" onClick={() => { setLoginOpen(true); setLoginStatus({ type: "", message: "" }); }}>Login</button>
+        <a className="btn register-nav" href="#register">Register</a>
+      </div></header>
 
       <main>
-        {/* Hero section */}
-        <section className="hero" id="home">
-          <div className="container hero-grid">
-            <div className="hero-copy">
-              <span className="eyebrow">
-                Skill Training for the Youth of Telangana
-              </span>
-
-              <h1>
-                Upgrade Your Skills.
-                <br />
-                <span>Build Your Future!</span>
-              </h1>
-
-              <p>
-                Explore computer, software, and digital skills training
-                to support your career goals. Contact us to learn about
-                courses and upcoming batches.
-              </p>
-
-              <div className="hero-actions">
-                <a className="button button-gold" href="#courses">
-                  Explore Courses
-                </a>
-
-                <a className="button button-outline" href="#contact">
-                  Contact Us
-                </a>
-              </div>
-
-              <div className="hero-note">
-                <span>✓</span> Learn · Practice · Grow
-              </div>
+        <section className="hero"><div className="wrap hero-grid">
+          <div className="intro">
+            <span className="pill">✦ &nbsp; 100% FREE TRAINING</span>
+            <h1>Learn Skills for a <strong>Brighter Future</strong></h1>
+            <p>Free training programs to help you build real skills, get job opportunities and grow your career.</p>
+            <div className="highlights">
+              <div className="highlight"><span>👥</span><b>Free Training<small>for All</small></b></div>
+              <div className="highlight"><span>▥</span><b>Practical<small>Hands-on Learning</small></b></div>
+              <div className="highlight"><span>▰</span><b>Career<small>Guidance &amp; Support</small></b></div>
             </div>
-
-            <div className="hero-visual">
-              <div className="hero-card">
-                <div className="building-art">
-                  <span className="building-icon">🏢</span>
-
-                  <strong>TASK Skill Centre</strong>
-
-                  <small>SKILL DEVELOPMENT</small>
-                </div>
-
-                <div className="hero-card-bottom">
-                  <span className="hero-card-icon">🚀</span>
-
-                  <div>
-                    <strong>
-                      A New Direction for Your Career
-                    </strong>
-
-                    <small>
-                      Contact us for course details and batch schedules.
-                    </small>
-                  </div>
-                </div>
-              </div>
-
-              <div className="floating-badge">
-                🎓 <span>Build Your Skills</span>
-              </div>
-            </div>
+            <a className="btn hero-cta" href="#courses">Explore Free Courses ↓</a>
           </div>
-        </section>
 
-        {/* Courses section */}
-        <section className="section courses-section" id="courses">
-          <div className="container">
-            <div className="section-heading">
-              <span className="section-kicker">OUR COURSES</span>
-
-              <h2>Courses to Support Your Future</h2>
-
-              <p>
-                Explore courses that may match your interests and career goals.
-              </p>
-            </div>
-
-            <div className="course-grid">
-              {COURSES.map((course) => (
-                <article className="course-card" key={course.title}>
-                  <div className="course-icon">{course.icon}</div>
-
-                  <h3>{course.title}</h3>
-
-                  <p>{course.description}</p>
-
-                  <a
-                    className="text-button"
-                    href="#contact"
-                    onClick={() => selectCourse(course.title)}
-                  >
-                    Enquire →
-                  </a>
-                </article>
-              ))}
-            </div>
+          <div className="art">
+            <div className="art-circle" aria-hidden="true" />
+            <img src={STUDENT_IMAGE} alt="Smiling student holding books and giving a thumbs-up" className="student-girl-image" />
+            <div className="art-note">Learn<br />Practice<br />Grow <span>✦</span></div>
           </div>
-        </section>
 
-        {/* Benefits section */}
-        <section className="section benefits-section" id="benefits">
-          <div className="container">
-            <div className="section-heading">
-              <span className="section-kicker">WHY CHOOSE US</span>
-
-              <h2>Support for Your Learning and Career</h2>
-
-              <p>
-                Contact the centre to confirm the services it offers.
-              </p>
+          <section className="formcard" id="register" aria-labelledby="registration-title">
+            <div className="formtitle">
+              <span className="formlogo" aria-hidden="true">▤</span>
+              <span><h2 id="registration-title">Register for Free Training</h2><p>Fill in the form to express your interest in a course.</p></span>
             </div>
-
-            <div className="benefits-grid">
-              {BENEFITS.map((benefit) => (
-                <article
-                  className="benefit-card"
-                  key={benefit.title}
-                >
-                  <div className="benefit-icon">{benefit.icon}</div>
-
-                  <h3>{benefit.title}</h3>
-
-                  <p>{benefit.description}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Call to action */}
-        <section className="cta">
-          <div className="container cta-inner">
-            <div>
-              <h2>Start Building Your Career Today!</h2>
-
-              <p>
-                Ask about course fees, eligibility, certificates,
-                and placement assistance.
-              </p>
-            </div>
-
-            <a className="button button-red" href="#contact">
-              Enquire Now
-            </a>
-          </div>
-        </section>
-
-        {/* Contact section */}
-        <section className="section contact-section" id="contact">
-          <div className="container">
-            <div className="section-heading">
-              <span className="section-kicker">CONTACT US</span>
-
-              <h2>Get in Touch for More Information</h2>
-
-              <p>
-                Contact us to ask about courses and registration.
-              </p>
-            </div>
-
-            <div className="contact-grid">
-              <div className="contact-card">
-                <h3>Contact Information</h3>
-
-                <div className="contact-row">
-                  <span>📞</span>
-
-                  <div>
-                    <strong>96184 49360</strong>
-                    <small>Course Enquiries</small>
-                  </div>
-                </div>
-
-                <div className="contact-row">
-                  <span>📞</span>
-
-                  <div>
-                    <strong>94905 00282</strong>
-                    <small>Course Enquiries</small>
-                  </div>
-                </div>
-
-                <div className="contact-row">
-                  <span>📍</span>
-
-                  <div>
-                    <strong>TASK Skill Centre</strong>
-                    <small>{CENTRE_ADDRESS}</small>
-                  </div>
-                </div>
-
-                <div className="notice">
-                  <strong>Important:</strong> Verify the centre's
-                  affiliation, courses, fees, and placement claims
-                  before publishing.
-                </div>
-              </div>
-
-              <form
-                className="contact-form"
-                onSubmit={handleContactSubmit}
-              >
-                <h3>Course Enquiry Form</h3>
-
-                <label htmlFor="contact-name">Full Name</label>
-
-                <input
-                  id="contact-name"
-                  name="name"
-                  value={form.name}
-                  onChange={handleContactChange}
-                  required
-                  placeholder="Enter your full name"
-                />
-
-                <label htmlFor="contact-phone">Phone Number</label>
-
-                <input
-                  id="contact-phone"
-                  name="phone"
-                  type="tel"
-                  value={form.phone}
-                  onChange={handleContactChange}
-                  required
-                  pattern="[0-9+\-\s]{10,15}"
-                  placeholder="Enter your phone number"
-                />
-
-                <label htmlFor="contact-course">
-                  Course of Interest
-                </label>
-
-                <select
-                  id="contact-course"
-                  name="course"
-                  value={form.course}
-                  onChange={handleContactChange}
-                  required
-                >
-                  <option value="">Select a course</option>
-
-                  {COURSES.map((course) => (
-                    <option
-                      key={course.title}
-                      value={course.title}
-                    >
-                      {course.title}
-                    </option>
-                  ))}
-
-                  <option value="Other">Other</option>
-                </select>
-
-                <label htmlFor="contact-message">
-                  Message (Optional)
-                </label>
-
-                <textarea
-                  id="contact-message"
-                  name="message"
-                  value={form.message}
-                  onChange={handleContactChange}
-                  placeholder="What would you like to know?"
-                />
-
-                <button
-                  className="button button-red submit-button"
-                  type="submit"
-                >
-                  Submit Enquiry
-                </button>
-
-                {status && (
-                  <p className="form-status" role="status">
-                    {status}
-                  </p>
-                )}
-              </form>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      {/* Footer */}
-      <footer className="site-footer">
-        <strong>
-          Telangana Academy for Skill and Knowledge
-        </strong>
-
-        <p>{CENTRE_ADDRESS}</p>
-
-        <p>Skill Development · Learning · Career Guidance</p>
-
-        <small>
-          © {new Date().getFullYear()} Website Demo.
-          Replace sample details with verified information.
-        </small>
-      </footer>
-
-      {/* Login and registration modal */}
-      {showAuth && (
-        <div
-          className="auth-overlay"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
-              setShowAuth(false);
-            }
-          }}
-        >
-          <section
-            className="auth-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="auth-title"
-          >
-            <button
-              className="auth-close"
-              type="button"
-              onClick={() => setShowAuth(false)}
-              aria-label="Close"
-            >
-              ×
-            </button>
-
-            <div className="auth-icon">🎓</div>
-
-            <p className="section-kicker auth-kicker">
-              TASK SKILL CENTRE
-            </p>
-
-            <h2 id="auth-title">
-              {authMode === "login"
-                ? "Welcome Back"
-                : "Create Your Account"}
-            </h2>
-
-            <p className="auth-subtitle">
-              {authMode === "login"
-                ? "Log in to continue to your account."
-                : "Register to get started with course enquiries."}
-            </p>
-
-            <div className="auth-tabs">
-              <button
-                className={authMode === "login" ? "active" : ""}
-                type="button"
-                onClick={() => {
-                  setAuthMode("login");
-                  setAuthMessage("");
-                }}
-              >
-                Login
-              </button>
-
-              <button
-                className={authMode === "register" ? "active" : ""}
-                type="button"
-                onClick={() => {
-                  setAuthMode("register");
-                  setAuthMessage("");
-                }}
-              >
-                Register
-              </button>
-            </div>
-
-            <form
-              className="auth-form"
-              onSubmit={handleAuthSubmit}
-            >
-              {authMode === "register" && (
-                <>
-                  <label htmlFor="auth-name">Full Name</label>
-
-                  <input
-                    id="auth-name"
-                    name="name"
-                    value={authForm.name}
-                    onChange={handleAuthChange}
-                    required
-                    autoComplete="name"
-                    placeholder="Enter your full name"
-                  />
-
-                  <label htmlFor="auth-phone">Phone Number</label>
-
-                  <input
-                    id="auth-phone"
-                    name="phone"
-                    type="tel"
-                    value={authForm.phone}
-                    onChange={handleAuthChange}
-                    required
-                    pattern="[0-9+\-\s]{10,15}"
-                    autoComplete="tel"
-                    placeholder="Enter your phone number"
-                  />
-                </>
-              )}
-
-              <label htmlFor="auth-email">Email Address</label>
-
-              <input
-                id="auth-email"
-                name="email"
-                type="email"
-                value={authForm.email}
-                onChange={handleAuthChange}
-                required
-                autoComplete="email"
-                placeholder="you@example.com"
-              />
-
-              <label htmlFor="auth-password">Password</label>
-
-              <input
-                id="auth-password"
-                name="password"
-                type="password"
-                value={authForm.password}
-                onChange={handleAuthChange}
-                required
-                minLength={6}
-                autoComplete={
-                  authMode === "login"
-                    ? "current-password"
-                    : "new-password"
-                }
-                placeholder="At least 6 characters"
-              />
-
-              {authMode === "register" && (
-                <>
-                  <label htmlFor="auth-confirm-password">
-                    Confirm Password
-                  </label>
-
-                  <input
-                    id="auth-confirm-password"
-                    name="confirmPassword"
-                    type="password"
-                    value={authForm.confirmPassword}
-                    onChange={handleAuthChange}
-                    required
-                    minLength={6}
-                    autoComplete="new-password"
-                    placeholder="Re-enter your password"
-                  />
-                </>
-              )}
-
-              {authMessage && (
-                <p className="auth-message" role="alert">
-                  {authMessage}
-                </p>
-              )}
-
-              <button
-                className="button button-red auth-submit"
-                type="submit"
-              >
-                {authMode === "login"
-                  ? "Login"
-                  : "Create Account"}
-              </button>
+            <form onSubmit={submitRegistration}>
+              <label htmlFor="name">Full Name <em>*</em></label>
+              <input id="name" name="name" autoComplete="name" value={form.name} onChange={updateField} placeholder="Enter your full name" required />
+              <label htmlFor="mobile">Mobile Number <em>*</em></label>
+              <input id="mobile" name="mobile" type="tel" autoComplete="tel-national" value={form.mobile} onChange={updateField} placeholder="Enter 10 digit mobile number" inputMode="numeric" pattern="[6-9][0-9]{9}" maxLength={10} required />
+              <label htmlFor="course">Select Course <em>*</em></label>
+              <select id="course" name="course" value={form.course} onChange={updateField} required>{COURSES.map((course) => <option key={course.title} value={course.title}>{course.title}</option>)}</select>
+              <label htmlFor="qualification">Education Qualification <em>*</em></label>
+              <input id="qualification" name="qualification" value={form.qualification} onChange={updateField} placeholder="e.g. 10th, 12th, Diploma, B.Tech" required />
+              <label htmlFor="batch">Preferred Batch Timing <em>*</em></label>
+              <select id="batch" name="batch" value={form.batch} onChange={updateField} required>
+                <option value="">Select batch timing</option><option>Morning</option><option>Afternoon</option><option>Evening</option><option>Flexible</option>
+              </select>
+              <label htmlFor="message">Additional Message <span className="optional">(Optional)</span></label>
+              <textarea id="message" name="message" value={form.message} onChange={updateField} placeholder="Any questions or special requirements?" rows={2} />
+              <button className="btn submit" type="submit">➤ &nbsp; Submit Registration</button>
+              {status.message && <p className={`status ${status.type}`} role="status" aria-live="polite">{status.message}</p>}
+              <p className="privacy">Demo only: details are stored in this browser, not sent to the centre.</p>
             </form>
-
-            <p className="auth-switch">
-              {authMode === "login"
-                ? "Don't have an account? "
-                : "Already have an account? "}
-
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthMode(
-                    authMode === "login" ? "register" : "login"
-                  );
-                  setAuthMessage("");
-                }}
-              >
-                {authMode === "login" ? "Register" : "Login"}
-              </button>
-            </p>
-
-            <p className="auth-warning">
-              Demo authentication only. Do not use real or reused
-              passwords. Production authentication needs a secure backend.
-            </p>
           </section>
-        </div>
-      )}
-    </>
+        </div></section>
+
+        <section className="courses section" id="courses"><div className="wrap">
+          <div className="sectionhead"><div><small>LEARN NEW SKILLS</small><h2>Our Free Training Courses</h2><p>Choose a course and register your interest.</p></div><a href="#register">Register for a course →</a></div>
+          <div className="coursegrid">{COURSES.map((course, index) => <article className="course" key={course.title}>
+            <span className={`courseicon icon${index}`} aria-hidden="true">{course.icon}</span>
+            <div><h3>{course.title}</h3><p>{course.description}</p><span className="free">Free Training</span><button className="course-link" type="button" onClick={() => chooseCourse(course.title)}>Select course →</button></div>
+          </article>)}</div>
+        </div></section>
+
+        <section className="benefits" id="benefits"><div className="wrap benefitgrid">
+          {[["♟","Expert Trainers","Learn from experienced trainers"],["▣","Practical Learning","Real-time projects and hands-on practice"],["▰","Job Support","Interview guidance and career support"],["♙","Free Certification","Course completion certificate provided"]].map(([icon,title,description], index) => <article className="benefit" key={title}><span className={`benefiticon b${index}`}>{icon}</span><span><b>{title}</b><small>{description}</small></span></article>)}
+        </div></section>
+
+        <section className="info section" id="about"><div className="wrap infogrid">
+          <div><h2>About TASK Skill Centre</h2><p>TASK Skill Centre aims to help learners develop practical, industry-relevant skills and prepare for career opportunities through free training programs.</p><a className="btn outline" href="#courses">Know More About Us</a></div>
+          <div><h2>Our Location</h2><p>⌖ &nbsp; {ADDRESS}</p><a className="btn outline" target="_blank" rel="noreferrer" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ADDRESS)}`}>Get Directions ↗</a></div>
+          <div id="contact"><h2>Contact Us</h2><p>☎ &nbsp; <a href={`tel:+91${PHONE_ONE.replace(/\s/g, "")}`}>+91 {PHONE_ONE}</a><br />☎ &nbsp; <a href={`tel:+91${PHONE_TWO.replace(/\s/g, "")}`}>+91 {PHONE_TWO}</a></p><a className="whatsapp" target="_blank" rel="noreferrer" href={`https://wa.me/91${PHONE_ONE.replace(/\s/g, "")}?text=${encodeURIComponent("Hello TASK Skill Centre, I would like to know about free training courses.")}`}>◉ &nbsp; Chat on WhatsApp</a></div>
+        </div></section>
+      </main>
+      <footer><div className="wrap foot"><span>© {new Date().getFullYear()} TASK Skill Centre. All rights reserved.</span><span>Learn · Practice · Grow</span></div></footer>
+
+      {loginOpen && <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setLoginOpen(false); }}>
+        <section className="login-modal" role="dialog" aria-modal="true" aria-labelledby="login-title">
+          <button type="button" className="modal-close" aria-label="Close login" onClick={() => setLoginOpen(false)}>×</button>
+          <div className="modal-brand"><span className="formlogo">▤</span><div><h2 id="login-title">Welcome Back</h2><p>Login to TASK Skill Centre</p></div></div>
+          <form onSubmit={submitLogin}>
+            <label htmlFor="login-mobile">Mobile Number <em>*</em></label>
+            <input id="login-mobile" type="tel" value={login.mobile} onChange={(event) => { setLogin({ ...login, mobile: event.target.value }); setLoginStatus({ type: "", message: "" }); }} placeholder="Enter your 10-digit mobile number" inputMode="numeric" pattern="[6-9][0-9]{9}" maxLength={10} autoComplete="username" required />
+            <label htmlFor="login-password">Password <em>*</em></label>
+            <input id="login-password" type="password" value={login.password} onChange={(event) => { setLogin({ ...login, password: event.target.value }); setLoginStatus({ type: "", message: "" }); }} placeholder="Enter your password" autoComplete="current-password" required />
+            <button className="btn submit" type="submit">Login</button>
+            {loginStatus.message && <p className={`status ${loginStatus.type}`} role="status" aria-live="polite">{loginStatus.message}</p>}
+            <p className="login-note">Demo interface only. No password is stored or checked. Connect a secure backend to enable real login.</p>
+            <p className="signup-prompt">New to TASK Skill Centre? <button type="button" onClick={() => { setLoginOpen(false); document.getElementById("register")?.scrollIntoView({ behavior: "smooth", block: "center" }); }}>Register here</button></p>
+          </form>
+        </section>
+      </div>}
+    </div>
   );
 }
-
-export default App;
